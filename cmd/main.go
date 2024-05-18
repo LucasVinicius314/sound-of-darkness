@@ -18,7 +18,7 @@ import (
 var (
 	CLIENT_ID           = ""
 	GUILD_ID            = ""
-	CATEGORY_ID			= ""
+	CATEGORY_ID         = ""
 	TOKEN               = ""
 	AUDIO_INPUT_FOLDER  = "../resources/audio/"
 	AUDIO_OUTPUT_FOLDER = "../resources/encoded/"
@@ -172,12 +172,12 @@ func identifyActiveChannel(s *discordgo.Session) (channelID string, err error) {
 func joinChannel(s *discordgo.Session, fileName string) (err error) {
 	log.Printf("playing [%s]", fileName)
 
-	activeChannelID, err := identifyActiveChannel(s, categoryID)
+	activeChannelID, err := identifyActiveChannel(s)
 	if err != nil {
 		return err
 	}
 
-	vc, err := s.ChannelVoiceJoin(activeChannelID, false, true)
+	vc, err := s.ChannelVoiceJoin(GUILD_ID, activeChannelID, false, true)
 	if err != nil {
 		return err
 	}

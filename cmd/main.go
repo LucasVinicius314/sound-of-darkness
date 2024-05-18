@@ -145,10 +145,18 @@ func playSound(vc *discordgo.VoiceConnection, filePath string) error {
 	return nil
 }
 
+// TODO: Logica para pegar o id do canal com maior quantidade de membros em determinada
+// categoria do discord e fazer dar join nesse canal
+func indentifyActiveChannel(s *discordgo.Session) (err error) {
+	return CHANNEL_ID
+}
+
 func joinChannel(s *discordgo.Session, fileName string) (err error) {
 	log.Printf("playing [%s]", fileName)
 
-	vc, err := s.ChannelVoiceJoin(GUILD_ID, CHANNEL_ID, false, true)
+	activeChannelID := indentifyActiveChannel()
+
+	vc, err := s.ChannelVoiceJoin(activeChannelID, false, true)
 	if err != nil {
 		return err
 	}

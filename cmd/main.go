@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	CHANNEL_ID          = ""
 	CLIENT_ID           = ""
 	GUILD_ID            = ""
+	CATEGORY_ID			= ""
 	TOKEN               = ""
 	AUDIO_INPUT_FOLDER  = "../resources/audio/"
 	AUDIO_OUTPUT_FOLDER = "../resources/encoded/"
@@ -66,7 +66,7 @@ func getRandomItem(arr []string) string {
 }
 
 func initEnv() {
-	CHANNEL_ID = os.Getenv("CHANNEL_ID")
+	CATEGORY_ID = os.Getenv("CATEGORY_ID")
 	CLIENT_ID = os.Getenv("CLIENT_ID")
 	GUILD_ID = os.Getenv("GUILD_ID")
 	TOKEN = os.Getenv("TOKEN")
@@ -145,16 +145,37 @@ func playSound(vc *discordgo.VoiceConnection, filePath string) error {
 	return nil
 }
 
-// TODO: Logica para pegar o id do canal com maior quantidade de membros em determinada
-// categoria do discord e fazer dar join nesse canal
-func indentifyActiveChannel(s *discordgo.Session) (err error) {
-	return CHANNEL_ID
+func identifyActiveChannel(s *discordgo.Session) (channelID string, err error) {
+	categoryChannels, err := s.GuildChannels(CATEGORY_ID)
+	if err != nil {
+		return "", err
+	}
+
+	maxMembers := -1
+	for _, channel := range categoryChannels {
+		if channel.Type == discordgo.ChannelTypeGuildVoice {
+			channelState, err := s.Channel(channel.ID)
+			if err != nil {
+				return "", err
+			}
+
+			memberCount := len(channelState.Recipients)
+			if memberCount > maxMembers {
+				maxMembers = memberCount
+				channelID = channel.ID
+			}
+		}
+	}
+	return channelID, nil
 }
 
 func joinChannel(s *discordgo.Session, fileName string) (err error) {
 	log.Printf("playing [%s]", fileName)
 
-	activeChannelID := indentifyActiveChannel()
+	activeChannelID, err := identifyActiveChannel(s, categoryID)
+	if err != nil {
+		return err
+	}
 
 	vc, err := s.ChannelVoiceJoin(activeChannelID, false, true)
 	if err != nil {

@@ -185,12 +185,12 @@ func identifyActiveChannel(s *discordgo.Session) (channelID string, err error) {
 }
 
 func joinChannel(s *discordgo.Session, fileName string) error {
-	log.Printf("playing [%s]", fileName)
-
 	activeChannelID, err := identifyActiveChannel(s)
 	if err != nil {
 		return err
 	}
+
+	log.Printf("playing [%s]", fileName)
 
 	time.Sleep(250 * time.Millisecond)
 

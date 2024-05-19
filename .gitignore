@@ -1,6 +1,5 @@
 .env
 
-resources/*/*.mp3
-resources/*/*.dca
+resources/**
 
 !.gitkeep

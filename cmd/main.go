@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	CHANNEL_ID          = ""
 	CLIENT_ID           = ""
 	GUILD_ID            = ""
+	CATEGORY_ID         = ""
 	TOKEN               = ""
 	AUDIO_INPUT_FOLDER  = "../resources/audio/"
 	AUDIO_OUTPUT_FOLDER = "../resources/encoded/"
@@ -66,7 +66,7 @@ func getRandomItem(arr []string) string {
 }
 
 func initEnv() {
-	CHANNEL_ID = os.Getenv("CHANNEL_ID")
+	CATEGORY_ID = os.Getenv("CATEGORY_ID")
 	CLIENT_ID = os.Getenv("CLIENT_ID")
 	GUILD_ID = os.Getenv("GUILD_ID")
 	TOKEN = os.Getenv("TOKEN")
@@ -145,10 +145,56 @@ func playSound(vc *discordgo.VoiceConnection, filePath string) error {
 	return nil
 }
 
-func joinChannel(s *discordgo.Session, fileName string) (err error) {
+func identifyActiveChannel(s *discordgo.Session) (channelID string, err error) {
+	channels, err := s.GuildChannels(GUILD_ID)
+	if err != nil {
+		return "", err
+	}
+
+	channelCountMap := make(map[string]int)
+
+	guild, err := s.State.Guild(GUILD_ID)
+	if err != nil {
+		return "", err
+	}
+
+	for _, voiceState := range guild.VoiceStates {
+		if voiceState.ChannelID != "" {
+			channelCountMap[voiceState.ChannelID]++
+		}
+	}
+
+	var maxCount int
+	var maxChannelID string
+
+	for _, channel := range channels {
+		if channel.Type == discordgo.ChannelTypeGuildVoice && channel.ParentID == CATEGORY_ID {
+			count := channelCountMap[channel.ID]
+			if count > maxCount {
+				maxCount = count
+				maxChannelID = channel.ID
+			}
+		}
+	}
+
+	if maxCount > 0 {
+		return maxChannelID, nil
+	}
+
+	return "", fmt.Errorf("no active voice channels found in the specified category")
+}
+
+func joinChannel(s *discordgo.Session, fileName string) error {
+	activeChannelID, err := identifyActiveChannel(s)
+	if err != nil {
+		return err
+	}
+
 	log.Printf("playing [%s]", fileName)
 
-	vc, err := s.ChannelVoiceJoin(GUILD_ID, CHANNEL_ID, false, true)
+	time.Sleep(250 * time.Millisecond)
+
+	vc, err := s.ChannelVoiceJoin(GUILD_ID, activeChannelID, false, true)
 	if err != nil {
 		return err
 	}

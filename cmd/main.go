@@ -146,36 +146,53 @@ func playSound(vc *discordgo.VoiceConnection, filePath string) error {
 }
 
 func identifyActiveChannel(s *discordgo.Session) (channelID string, err error) {
-	categoryChannels, err := s.GuildChannels(CATEGORY_ID)
+	channels, err := s.GuildChannels(GUILD_ID)
 	if err != nil {
 		return "", err
 	}
 
-	maxMembers := -1
-	for _, channel := range categoryChannels {
-		if channel.Type == discordgo.ChannelTypeGuildVoice {
-			channelState, err := s.Channel(channel.ID)
-			if err != nil {
-				return "", err
-			}
+	channelCountMap := make(map[string]int)
 
-			memberCount := len(channelState.Recipients)
-			if memberCount > maxMembers {
-				maxMembers = memberCount
-				channelID = channel.ID
+	guild, err := s.State.Guild(GUILD_ID)
+	if err != nil {
+		return "", err
+	}
+
+	for _, voiceState := range guild.VoiceStates {
+		if voiceState.ChannelID != "" {
+			channelCountMap[voiceState.ChannelID]++
+		}
+	}
+
+	var maxCount int
+	var maxChannelID string
+
+	for _, channel := range channels {
+		if channel.Type == discordgo.ChannelTypeGuildVoice && channel.ParentID == CATEGORY_ID {
+			count := channelCountMap[channel.ID]
+			if count > maxCount {
+				maxCount = count
+				maxChannelID = channel.ID
 			}
 		}
 	}
-	return channelID, nil
+
+	if maxCount > 0 {
+		return maxChannelID, nil
+	}
+
+	return "", fmt.Errorf("no active voice channels found in the specified category")
 }
 
-func joinChannel(s *discordgo.Session, fileName string) (err error) {
+func joinChannel(s *discordgo.Session, fileName string) error {
 	log.Printf("playing [%s]", fileName)
 
 	activeChannelID, err := identifyActiveChannel(s)
 	if err != nil {
 		return err
 	}
+
+	time.Sleep(250 * time.Millisecond)
 
 	vc, err := s.ChannelVoiceJoin(GUILD_ID, activeChannelID, false, true)
 	if err != nil {

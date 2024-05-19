@@ -77,7 +77,7 @@ func prepareSounds() ([]string, error) {
 	options.RawOutput = true
 	options.Bitrate = 96
 
-	files, err := os.ReadDir(AUDIO_INPUT_FOLDER)
+	files, err := os.
 	if err != nil {
 		return nil, err
 	}
